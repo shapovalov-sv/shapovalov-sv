@@ -14,15 +14,21 @@
 
 ## 📌 Проекты
 
-| Проект | Описание |
-|--------|----------|
-| [pdf-risk-analyzer](https://github.com/shapovalov-sv/pdf-risk-analyzer) | Анализ PDF-документов на признаки мошенничества |
-| [dlp-analyzer](https://github.com/shapovalov-sv/dlp-analyzer) | Анализ скриншотов рабочих станций для выявления утечек данных |
-| [telegram-sql-bot](https://github.com/shapovalov-sv/telegram-sql-bot) | Telegram-бот для изучения SQL: уроки, квизы, практика на учебной БД |
+### [dlp-analyzer](https://github.com/shapovalov-sv/dlp-analyzer)
+Анализ скриншотов рабочих станций для выявления утечек данных — облачные хранилища, банковские карты, документы с грифом секретности.
+
+![dlp-analyzer](https://raw.githubusercontent.com/shapovalov-sv/shapovalov-sv/main/screenshots/dlp-analyzer.png)
+
+---
+
+### [pdf-risk-analyzer](https://github.com/shapovalov-sv/pdf-risk-analyzer)
+Пакетный анализ PDF-документов на признаки мошенничества и уголовных рисков. Работает офлайн, документы не покидают устройство.
+
+![pdf-risk-analyzer](https://raw.githubusercontent.com/shapovalov-sv/shapovalov-sv/main/screenshots/risk-analyzer.png)
 
 ---
 
 ## 📫 Контакт
 
-- Email: shapovalowww@yandex.ru
+- Email: shapovalowww@gmail.com
 - HH.ru: [резюме](https://hh.ru/resume/dc2d3a1aff0638f9360039ed1f736967363163)
