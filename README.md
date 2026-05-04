@@ -24,5 +24,5 @@
 
 ## 📫 Контакт
 
-- Email: shapovalowww@gmail.com
+- Email: shapovalowww@yandex.ru
 - HH.ru: [резюме](https://hh.ru/resume/dc2d3a1aff0638f9360039ed1f736967363163)
