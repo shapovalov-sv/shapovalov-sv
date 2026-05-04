@@ -1,16 +1,27 @@
-## Hi there 👋
+# Привет, я Станислав 👋
 
-<!--
-**shapovalov-sv/shapovalov-sv** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Специалист по экономической безопасности. Здесь — pet-проекты по автоматизации проверок и анализу рисков: пишу скрипты и собираю инструменты под задачи своей работы.
 
-Here are some ideas to get you started:
+---
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## 🔍 Чем занимаюсь
+
+- Экономическая безопасность и фрод-мониторинг
+- Автоматизация рутинных проверок с помощью Python и SQL
+- Анализ данных для выявления аномалий и рисков
+
+---
+
+## 📌 Проекты
+
+| Проект | Описание |
+|--------|----------|
+| [pdf-risk-analyzer](https://github.com/shapovalov-sv/pdf-risk-analyzer) | Анализ PDF-документов на признаки мошенничества |
+| [dlp-analyzer](https://github.com/shapovalov-sv/dlp-analyzer) | Анализ скриншотов рабочих станций для выявления утечек данных |
+
+---
+
+## 📫 Контакт
+
+- Email: shapovalowww@gmail.com
+- HH.ru: [резюме](https://hh.ru/resume/dc2d3a1aff0638f9360039ed1f736967363163)
