@@ -18,6 +18,7 @@
 |--------|----------|
 | [pdf-risk-analyzer](https://github.com/shapovalov-sv/pdf-risk-analyzer) | Анализ PDF-документов на признаки мошенничества |
 | [dlp-analyzer](https://github.com/shapovalov-sv/dlp-analyzer) | Анализ скриншотов рабочих станций для выявления утечек данных |
+| [telegram-sql-bot](https://github.com/shapovalov-sv/telegram-sql-bot) | Telegram-бот для изучения SQL: уроки, квизы, практика на учебной БД |
 
 ---
 
