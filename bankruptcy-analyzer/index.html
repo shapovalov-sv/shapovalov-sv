@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анализатор банкротных рисков</title>
+<!-- SheetJS (xlsx) грузится для разбора .xlsx/.xls. Сами данные никуда не отправляются — вся обработка в браузере. -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3140;
+    --txt:#e6edf3; --muted:#8b949e;
+    --green:#3fb950; --green2:#2ea043;
+    --red:#f85149; --red-bg:#3a1d20;
+    --amber:#d29922; --amber-bg:#3a2f12;
+    --blue:#58a6ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font-family:"Segoe UI",-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    padding:32px 24px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+  .badge{
+    font-size:11px;letter-spacing:2px;color:var(--green);
+    text-transform:uppercase;font-weight:600;margin-bottom:10px;
+  }
+  h1{font-size:34px;margin:0 0 8px;font-weight:800}
+  h1 em{color:var(--green);font-style:italic}
+  .sub{color:var(--muted);max-width:760px;line-height:1.55;font-size:14px}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;margin-top:14px;
+    background:#11271a;border:1px solid #1f5132;color:var(--green);
+    padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;
+  }
+  .pill::before{content:"●";font-size:9px}
+
+  .drop{
+    margin-top:26px;border:2px dashed var(--line);border-radius:14px;
+    background:var(--panel);padding:46px 20px;text-align:center;
+    cursor:pointer;transition:.15s;
+  }
+  .drop:hover,.drop.over{border-color:var(--green);background:var(--panel2)}
+  .drop .ic{font-size:40px;opacity:.55}
+  .drop .t1{margin-top:12px;font-size:16px}
+  .drop .t2{margin-top:6px;color:var(--muted);font-size:13px}
+  input[type=file]{display:none}
+
+  .btnrow{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+  button{
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    border:none;border-radius:8px;padding:10px 18px;color:#fff;
+  }
+  .b-green{background:var(--green2)} .b-green:hover{background:var(--green)}
+  .b-gray{background:#30363d} .b-gray:hover{background:#3d444d}
+  .b-red{background:#6e2329} .b-red:hover{background:var(--red)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+
+  .hidden{display:none}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card .n{font-size:30px;font-weight:800;line-height:1}
+  .card .l{color:var(--muted);font-size:12px;margin-top:8px;text-transform:uppercase;letter-spacing:.5px}
+  .card.high .n{color:var(--red)} .card.med .n{color:var(--amber)} .card.low .n{color:var(--green)}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;align-items:center}
+  .toolbar input[type=text]{
+    flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);
+    color:var(--txt);padding:10px 12px;border-radius:8px;font-size:14px;font-family:inherit;
+  }
+  .toolbar select{
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    padding:10px 12px;border-radius:8px;font-size:14px;font-family:inherit;
+  }
+
+  table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--bg)}
+  tr:hover td{background:#12161d}
+  .name{font-weight:600}
+  .tag{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
+  .tag.high{background:var(--red-bg);color:var(--red)}
+  .tag.med{background:var(--amber-bg);color:var(--amber)}
+  .tag.low{background:#11271a;color:var(--green)}
+  .reason{color:var(--muted);font-size:12px;line-height:1.5}
+  .reason b{color:var(--txt)}
+  .imp{color:var(--red);font-weight:700}
+  .msg{color:var(--muted);font-size:12px;max-width:340px;line-height:1.45}
+
+  .empty{color:var(--muted);text-align:center;padding:40px;font-size:14px}
+  .err{background:var(--red-bg);border:1px solid var(--red);color:#ffb4ae;padding:12px 14px;border-radius:8px;margin-top:18px;font-size:13.5px}
+  .note{color:var(--muted);font-size:12px;margin-top:34px;line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border-radius:0;background:var(--panel);color:var(--muted);padding:9px 16px}
+  .seg button.active{background:var(--green2);color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="badge">⬢ Offline engine · Excel · риск-скоринг банкротства</div>
+  <h1>Анализатор <em>банкротных</em> рисков</h1>
+  <p class="sub">
+    Загрузите выгрузку «События мониторинга» (.xlsx / .xls / .csv). Инструмент извлекает
+    <b>наименования контрагентов</b>, <b>даты событий</b> и присваивает каждому событию
+    <b>уровень банкротного риска</b> по содержанию сообщения и группе событий.
+    Подготовлено для нужд службы экономической безопасности.
+  </p>
+  <span class="pill">Файл обрабатывается локально в браузере и не покидает ваше устройство</span>
+
+  <label class="drop" id="drop">
+    <div class="ic">⬚</div>
+    <div class="t1">Перетащите Excel-файл или нажмите для выбора</div>
+    <div class="t2">поддерживаются .xlsx, .xls и .csv</div>
+    <input type="file" id="file" accept=".xlsx,.xls,.csv">
+  </label>
+
+  <div id="error" class="err hidden"></div>
+
+  <div class="btnrow">
+    <button class="b-green" id="btnExport" disabled>⭳ Выгрузить результат (CSV)</button>
+    <button class="b-gray"  id="btnReset"  disabled>Сбросить</button>
+  </div>
+
+  <div id="results" class="hidden">
+
+    <div class="cards">
+      <div class="card"><div class="n" id="cTotal">0</div><div class="l">Контрагентов</div></div>
+      <div class="card high"><div class="n" id="cHigh">0</div><div class="l">Высокий риск</div></div>
+      <div class="card med"><div class="n" id="cMed">0</div><div class="l">Средний риск</div></div>
+      <div class="card low"><div class="n" id="cLow">0</div><div class="l">Низкий / инфо</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="seg">
+        <button id="viewAgg" class="active">По контрагентам</button>
+        <button id="viewEvt">По событиям</button>
+      </div>
+      <input type="text" id="search" placeholder="Поиск по наименованию…">
+      <select id="filter">
+        <option value="all">Все уровни риска</option>
+        <option value="high">Только высокий</option>
+        <option value="med">Только средний</option>
+        <option value="low">Только низкий / инфо</option>
+      </select>
+    </div>
+
+    <table id="table">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="empty hidden">Ничего не найдено по заданным фильтрам.</div>
+  </div>
+
+  <div class="note">
+    <b>Как считается риск.</b> Каждое событие сканируется по словарю признаков несостоятельности
+    (банкротство, наблюдение, конкурсное производство, внешнее управление, финансовое оздоровление,
+    арбитражный управляющий, ЕФРСБ, намерение кредитора обратиться в суд и т.д.), а также по группе
+    событий. <span class="tag high" style="padding:1px 7px">Высокий</span> — прямые признаки банкротства;
+    <span class="tag med" style="padding:1px 7px">Средний</span> — реорганизация, ликвидация, присоединение,
+    исполнительное производство, аресты; <span class="tag low" style="padding:1px 7px">Низкий</span> — прочие
+    существенные факты. В режиме «По контрагентам» показывается максимальный уровень риска по всем событиям
+    компании. Результат носит справочный характер и требует проверки специалистом.
+  </div>
+
+</div>
+
+<script>
+/* ---------- Словари риск-признаков (нижний регистр, по основам слов) ---------- */
+const HIGH = [
+  ['банкрот','признаки банкротства'],
+  ['несостоятельн','несостоятельность'],
+  ['конкурсн','конкурсное производство'],
+  ['наблюдени','процедура наблюдения'],
+  ['оздоровлени','финансовое оздоровление'],
+  ['внешнее управлени','внешнее управление'],
+  ['управляющ','арбитражный / конкурсный управляющий'],
+  ['ефрсб','ЕФРСБ — реестр сведений о банкротстве'],
+  ['намерении обратиться в суд','намерение кредитора подать на банкротство'],
+  ['реализаци имуществ','реализация имущества (торги)'],
+  ['мораторий','мораторий на удовлетворение требований']
+];
+const MED = [
+  ['реорганизаци','реорганизация'],
+  ['ликвидаци','ликвидация'],
+  ['присоединени','присоединение к другому юрлицу'],
+  ['уставн','изменение уставного капитала','капитал'],
+  ['исполнительн','исполнительное производство'],
+  ['арест','арест имущества'],
+  ['залог','залог'],
+  ['недостоверн','недостоверность сведений в ЕГРЮЛ'],
+  ['смена','смена руководителя / адреса','руководител','директор'],
+  ['задолженност','задолженность'],
+  ['взыскани','взыскание']
+];
+
+/* Признаки по группе событий */
+function groupRisk(g){
+  g=(g||'').toLowerCase();
+  if(g.includes('банкрот')) return 'high';
+  if(g.includes('изменение статуса')||g.includes('реорганизац')) return 'med';
+  return null;
+}
+
+/* ---------- Скоринг одной строки ---------- */
+function scoreRow(text, group){
+  const hay = ((text||'')+' '+(group||'')).toLowerCase();
+  const reasons = [];
+  let level = 'low';
+
+  // высокий
+  for(const grp of HIGH){
+    const stem = grp[0].includes(' ') ? null : grp[0];
+    // проверяем основы (все элементы кроме описания[1])
+    const stems = [grp[0], ...grp.slice(2)];
+    if(stems.some(s=> s && hay.includes(s.toLowerCase()))){
+      level='high'; reasons.push(grp[1]);
+    }
+  }
+  if(level!=='high'){
+    for(const grp of MED){
+      const stems = [grp[0], ...grp.slice(2)];
+      if(stems.some(s=> s && hay.includes(s.toLowerCase()))){
+        level='med'; reasons.push(grp[1]);
+      }
+    }
+  }
+  // группа событий может поднять уровень
+  const gr = groupRisk(group);
+  if(gr==='high' && level!=='high'){ level='high'; reasons.unshift('группа: признаки банкротства'); }
+  else if(gr==='med' && level==='low'){ level='med'; reasons.push('группа: изменение статуса'); }
+
+  return {level, reasons:[...new Set(reasons)]};
+}
+
+/* ---------- Поиск колонок по заголовкам ---------- */
+function findCols(rows){
+  const want = {
+    name:['наименование','контрагент','название','организаци'],
+    text:['текст сообщения','текст','сообщение'],
+    date:['дата события','дата'],
+    group:['группа событий','группа'],
+    important:['важное','важность'],
+    list:['список на мониторинге','мониторинг']
+  };
+  for(let r=0;r<Math.min(rows.length,15);r++){
+    const row=(rows[r]||[]).map(c=>String(c||'').toLowerCase().trim());
+    if(row.some(c=>c.includes('наименование')) && row.some(c=>c.includes('дата'))){
+      const map={};
+      for(const key in want){
+        let idx=-1;
+        for(const kw of want[key]){
+          idx=row.findIndex(c=>c.includes(kw));
+          if(idx>=0) break;
+        }
+        map[key]=idx;
+      }
+      return {headerRow:r, map};
+    }
+  }
+  return null;
+}
+
+/* ---------- Состояние ---------- */
+let EVENTS=[];   // {name,date,group,text,important,level,reasons}
+let AGG=[];      // агрегаты по контрагенту
+let VIEW='agg';
+
+const $ = s=>document.querySelector(s);
+const rankNum = {high:3, med:2, low:1};
+
+function process(rows){
+  const found = findCols(rows);
+  if(!found) throw new Error('Не найдены колонки. Ожидаются заголовки «Наименование» и «Дата события» (строка-шапка таблицы).');
+  const {headerRow, map} = found;
+  if(map.name<0 || map.date<0) throw new Error('Не удалось определить колонки «Наименование» и «Дата события».');
+
+  EVENTS=[];
+  let lastName='';
+  for(let r=headerRow+1; r<rows.length; r++){
+    const row=rows[r]||[];
+    let name=String(row[map.name]??'').trim();
+    if(name) lastName=name; else name=lastName; // объединённые ячейки → протягиваем имя
+    const text =map.text>=0 ?String(row[map.text]??'').trim():'';
+    const date =map.date>=0 ?String(row[map.date]??'').trim():'';
+    const group=map.group>=0?String(row[map.group]??'').trim():'';
+    const important=map.important>=0?String(row[map.important]??'').trim().toLowerCase():'';
+
+    if(!name && !text && !date) continue; // пустая строка
+    if(!name) continue;
+
+    const {level,reasons}=scoreRow(text,group);
+    EVENTS.push({name,date,group,text,
+      important: (important==='да'||important==='yes'||important==='true'),
+      level, reasons});
+  }
+  if(!EVENTS.length) throw new Error('В таблице не найдено ни одной строки с данными.');
+
+  // агрегация по контрагенту
+  const byName={};
+  for(const e of EVENTS){
+    if(!byName[e.name]) byName[e.name]={name:e.name, events:0, level:'low', reasons:new Set(), dates:[], anyImportant:false};
+    const a=byName[e.name];
+    a.events++;
+    if(rankNum[e.level]>rankNum[a.level]) a.level=e.level;
+    e.reasons.forEach(x=>a.reasons.add(x));
+    if(e.date) a.dates.push(e.date);
+    if(e.important) a.anyImportant=true;
+  }
+  AGG=Object.values(byName).map(a=>({
+    name:a.name, events:a.events, level:a.level,
+    reasons:[...a.reasons], dates:a.dates, anyImportant:a.anyImportant,
+    lastDate: a.dates.length? a.dates[a.dates.length-1] : ''
+  }));
+  AGG.sort((x,y)=> rankNum[y.level]-rankNum[x.level] || y.events-x.events);
+
+  renderSummary();
+  render();
+  $('#results').classList.remove('hidden');
+  $('#btnExport').disabled=false;
+  $('#btnReset').disabled=false;
+}
+
+function renderSummary(){
+  $('#cTotal').textContent=AGG.length;
+  $('#cHigh').textContent=AGG.filter(a=>a.level==='high').length;
+  $('#cMed').textContent=AGG.filter(a=>a.level==='med').length;
+  $('#cLow').textContent=AGG.filter(a=>a.level==='low').length;
+}
+
+const tagHtml = l => l==='high'?'<span class="tag high">Высокий</span>'
+                    : l==='med' ?'<span class="tag med">Средний</span>'
+                    :            '<span class="tag low">Низкий</span>';
+
+function render(){
+  const q=$('#search').value.trim().toLowerCase();
+  const f=$('#filter').value;
+  const thead=$('#table thead'), tbody=$('#table tbody');
+
+  let data, html='';
+  if(VIEW==='agg'){
+    thead.innerHTML='<tr><th>Наименование</th><th>Уровень риска</th><th>Событий</th><th>Последняя дата</th><th>Обоснование</th></tr>';
+    data=AGG.filter(a=>(!q||a.name.toLowerCase().includes(q)) && (f==='all'||a.level===f));
+    for(const a of data){
+      html+=`<tr>
+        <td class="name">${esc(a.name)}${a.anyImportant?' <span class="imp">★</span>':''}</td>
+        <td>${tagHtml(a.level)}</td>
+        <td>${a.events}</td>
+        <td>${esc(a.lastDate)}</td>
+        <td class="reason">${a.reasons.length?a.reasons.map(esc).join(', '):'—'}</td>
+      </tr>`;
+    }
+  } else {
+    thead.innerHTML='<tr><th>Наименование</th><th>Дата события</th><th>Группа</th><th>Риск</th><th>Текст сообщения</th></tr>';
+    data=EVENTS.filter(e=>(!q||e.name.toLowerCase().includes(q)) && (f==='all'||e.level===f));
+    data=[...data].sort((x,y)=>rankNum[y.level]-rankNum[x.level]);
+    for(const e of data){
+      html+=`<tr>
+        <td class="name">${esc(e.name)}${e.important?' <span class="imp">★</span>':''}</td>
+        <td>${esc(e.date)}</td>
+        <td>${esc(e.group)}</td>
+        <td>${tagHtml(e.level)}</td>
+        <td class="msg">${esc(e.text)}</td>
+      </tr>`;
+    }
+  }
+  tbody.innerHTML=html;
+  $('#empty').classList.toggle('hidden', data.length>0);
+}
+
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ---------- Экспорт ---------- */
+function exportCsv(){
+  const sep=';';
+  let rows;
+  if(VIEW==='agg'){
+    rows=[['Наименование','Уровень риска','Событий','Последняя дата','Обоснование']];
+    for(const a of AGG) rows.push([a.name, lvlText(a.level), a.events, a.lastDate, a.reasons.join(' | ')]);
+  } else {
+    rows=[['Наименование','Дата события','Группа событий','Уровень риска','Важное','Текст сообщения','Обоснование']];
+    for(const e of EVENTS) rows.push([e.name, e.date, e.group, lvlText(e.level), e.important?'да':'нет', e.text, e.reasons.join(' | ')]);
+  }
+  const csv='﻿'+rows.map(r=>r.map(c=>{
+    c=String(c??''); return /[";\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;
+  }).join(sep)).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='bankruptcy-risk-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+const lvlText=l=>l==='high'?'Высокий':l==='med'?'Средний':'Низкий';
+
+/* ---------- Чтение файла ---------- */
+function readFile(file){
+  showError('');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      if(typeof XLSX==='undefined') throw new Error('Библиотека разбора Excel не загрузилась (нет доступа к сети). Сохраните файл как .csv и попробуйте снова — CSV читается без интернета.');
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+      process(rows);
+    }catch(err){ showError(err.message||String(err)); }
+  };
+  reader.onerror=()=>showError('Не удалось прочитать файл.');
+  reader.readAsArrayBuffer(file);
+}
+
+function showError(msg){
+  const el=$('#error');
+  if(!msg){el.classList.add('hidden');el.textContent='';return;}
+  el.textContent='⚠ '+msg; el.classList.remove('hidden');
+}
+
+/* ---------- События UI ---------- */
+const drop=$('#drop'), fileInput=$('#file');
+fileInput.addEventListener('change',e=>{ if(e.target.files[0]) readFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+
+$('#search').addEventListener('input',render);
+$('#filter').addEventListener('change',render);
+$('#viewAgg').addEventListener('click',()=>{VIEW='agg';$('#viewAgg').classList.add('active');$('#viewEvt').classList.remove('active');render();});
+$('#viewEvt').addEventListener('click',()=>{VIEW='evt';$('#viewEvt').classList.add('active');$('#viewAgg').classList.remove('active');render();});
+$('#btnExport').addEventListener('click',exportCsv);
+$('#btnReset').addEventListener('click',()=>{
+  EVENTS=[];AGG=[];fileInput.value='';showError('');
+  $('#results').classList.add('hidden');
+  $('#btnExport').disabled=true;$('#btnReset').disabled=true;
+});
+</script>
+</body>
+</html>
